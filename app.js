@@ -1,160 +1,144 @@
-/* =====================================================
+/* =========================================================
    HYDR8
-   Premium Local-First Hydration App
-===================================================== */
+   Local-first hydration PWA
+========================================================= */
 
+const STORAGE_KEY = "hydr8_data_v2";
+const DATE_KEY = "hydr8_date_v2";
 
-/* =====================================================
-   STORAGE
-===================================================== */
-
-const STORAGE_KEY = "HYDR8_DATA_V1";
-
-const defaultData = {
-
+const DEFAULT_DATA = {
     name: "",
-
     goal: 3000,
-
     consumed: 0,
 
     drinks: [],
 
     presets: [
-
-        {
-            name: "Glass",
-            amount: 250
-        },
-
-        {
-            name: "Bottle",
-            amount: 500
-        },
-
-        {
-            name: "Gym Bottle",
-            amount: 750
-        },
-
-        {
-            name: "Large Bottle",
-            amount: 1000
-        }
-
+        { name: "Glass", amount: 250 },
+        { name: "Bottle", amount: 500 },
+        { name: "Gym Bottle", amount: 750 },
+        { name: "Large Bottle", amount: 1000 }
     ],
 
     reminders: {
-
         enabled: false,
-
         mode: "interval",
-
         interval: 60,
-
         start: "08:00",
-
         end: "22:00",
-
-        times:
-            "08:00, 10:00, 12:30, 15:00, 18:00"
-
+        times: "08:00, 10:00, 12:30, 15:00, 18:00"
     },
 
     workout: false,
-
     unit: "ml",
-
     theme: "dark",
-
     history: {}
-
 };
 
-
 let data = loadData();
-
 let reminderTimer = null;
-
 let deferredInstallPrompt = null;
 
 
+/* =========================================================
+   BASIC HELPERS
+========================================================= */
 
-/* =====================================================
-   STORAGE FUNCTIONS
-===================================================== */
+function $(id) {
+    return document.getElementById(id);
+}
+
+
+function cloneDefaultData() {
+    return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
 
 function loadData() {
 
     try {
 
         const saved =
-            JSON.parse(
-                localStorage.getItem(STORAGE_KEY)
-            );
+            localStorage.getItem(STORAGE_KEY);
 
         if (!saved) {
-
-            return structuredClone(defaultData);
-
+            return cloneDefaultData();
         }
 
+        const parsed =
+            JSON.parse(saved);
+
         return {
-
-            ...structuredClone(defaultData),
-
-            ...saved,
+            ...cloneDefaultData(),
+            ...parsed,
 
             reminders: {
+                ...DEFAULT_DATA.reminders,
+                ...(parsed.reminders || {})
+            },
 
-                ...defaultData.reminders,
+            presets:
+                Array.isArray(parsed.presets)
+                    ? parsed.presets
+                    : cloneDefaultData().presets,
 
-                ...(saved.reminders || {})
+            drinks:
+                Array.isArray(parsed.drinks)
+                    ? parsed.drinks
+                    : [],
 
-            }
-
+            history:
+                parsed.history || {}
         };
 
-    } catch {
+    } catch (error) {
 
-        return structuredClone(defaultData);
+        console.error(
+            "HYDR8 storage error:",
+            error
+        );
 
+        return cloneDefaultData();
     }
-
 }
 
 
 function saveData() {
 
-    localStorage.setItem(
+    try {
 
-        STORAGE_KEY,
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(data)
+        );
 
-        JSON.stringify(data)
+    } catch (error) {
 
-    );
+        console.error(
+            "Could not save data:",
+            error
+        );
 
-}
-
-
-
-/* =====================================================
-   HELPERS
-===================================================== */
-
-function $(id) {
-
-    return document.getElementById(id);
-
+    }
 }
 
 
 function todayKey() {
 
-    return new Date()
-        .toISOString()
-        .slice(0,10);
+    const date = new Date();
 
+    const year =
+        date.getFullYear();
+
+    const month =
+        String(date.getMonth() + 1)
+            .padStart(2, "0");
+
+    const day =
+        String(date.getDate())
+            .padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
 }
 
 
@@ -162,10 +146,11 @@ function formatAmount(ml) {
 
     if (data.unit === "oz") {
 
-        return `${Math.round(ml / 29.5735)} oz`;
+        return `${Math.round(
+            ml / 29.5735
+        )} oz`;
 
     }
-
 
     if (ml >= 1000) {
 
@@ -175,81 +160,88 @@ function formatAmount(ml) {
         return `${liters % 1 === 0
             ? liters.toFixed(0)
             : liters.toFixed(1)} L`;
-
     }
 
-
-    return `${ml} ml`;
-
+    return `${Math.round(ml)} ml`;
 }
 
 
 function showToast(message) {
 
-    const toast =
-        $("toast");
+    const toast = $("toast");
 
-    toast.textContent =
-        message;
+    if (!toast) return;
+
+    toast.textContent = message;
 
     toast.classList.add("show");
 
-    clearTimeout(showToast.timer);
+    clearTimeout(
+        showToast.timeout
+    );
 
-    showToast.timer =
+    showToast.timeout =
         setTimeout(() => {
 
             toast.classList.remove("show");
 
         }, 1800);
-
 }
 
 
 
-/* =====================================================
+/* =========================================================
    SHEETS
-===================================================== */
+========================================================= */
 
 function openSheet(id) {
 
-    $(id).classList.remove("hidden");
+    const sheet = $(id);
 
+    if (!sheet) {
+        console.error(
+            "Sheet not found:",
+            id
+        );
+        return;
+    }
+
+    sheet.classList.remove("hidden");
 }
 
 
 function closeSheet(id) {
 
-    $(id).classList.add("hidden");
+    const sheet = $(id);
 
+    if (!sheet) return;
+
+    sheet.classList.add("hidden");
 }
 
 
 document.addEventListener(
     "click",
-    event => {
+    function(event) {
 
-        const close =
+        const closeButton =
             event.target.closest(
                 "[data-close]"
             );
 
-        if (close) {
+        if (!closeButton) return;
 
-            closeSheet(
-                close.dataset.close
-            );
-
-        }
-
+        closeSheet(
+            closeButton.dataset.close
+        );
     }
 );
 
 
 
-/* =====================================================
-   DAILY RESET
-===================================================== */
+/* =========================================================
+   DAILY DATA
+========================================================= */
 
 function checkNewDay() {
 
@@ -258,54 +250,67 @@ function checkNewDay() {
 
     const previous =
         localStorage.getItem(
-            STORAGE_KEY + "_DATE"
+            DATE_KEY
         );
 
 
-    if (previous !== today) {
-
-        if (
-            previous &&
-            data.drinks.length
-        ) {
-
-            data.history[previous] =
-                data.drinks.reduce(
-                    (total, drink) =>
-                        total + drink.amount,
-                    0
-                );
-
-        }
-
-
-        data.consumed = 0;
-
-        data.drinks = [];
-
+    if (!previous) {
 
         localStorage.setItem(
-            STORAGE_KEY + "_DATE",
+            DATE_KEY,
             today
         );
 
-
-        saveData();
-
+        return;
     }
 
+
+    if (previous === today) {
+        return;
+    }
+
+
+    if (
+        data.drinks &&
+        data.drinks.length
+    ) {
+
+        data.history[previous] =
+            data.drinks.reduce(
+                (total, drink) =>
+                    total + Number(drink.amount || 0),
+                0
+            );
+    }
+
+
+    data.consumed = 0;
+
+    data.drinks = [];
+
+
+    localStorage.setItem(
+        DATE_KEY,
+        today
+    );
+
+    saveData();
 }
 
 
 
-/* =====================================================
-   DATE + GREETING
-===================================================== */
+/* =========================================================
+   DATE / GREETING
+========================================================= */
 
 function renderDate() {
 
-    $("todayDate").textContent =
+    const element =
+        $("todayDate");
 
+    if (!element) return;
+
+    element.textContent =
         new Date().toLocaleDateString(
             "en-IN",
             {
@@ -314,11 +319,16 @@ function renderDate() {
                 month: "long"
             }
         );
-
 }
 
 
 function renderGreeting() {
+
+    const element =
+        $("greeting");
+
+    if (!element) return;
+
 
     const hour =
         new Date().getHours();
@@ -348,22 +358,31 @@ function renderGreeting() {
     }
 
 
-    $("greeting").textContent =
+    element.textContent =
         greeting;
-
 }
 
 
 
-/* =====================================================
-   MAIN DASHBOARD
-===================================================== */
+/* =========================================================
+   DASHBOARD
+========================================================= */
 
 function renderDashboard() {
 
+    const goal =
+        Math.max(
+            Number(data.goal) || 3000,
+            1
+        );
+
+    const consumed =
+        Number(data.consumed) || 0;
+
+
     const percentage =
         Math.min(
-            data.consumed / data.goal,
+            consumed / goal,
             1
         );
 
@@ -377,147 +396,181 @@ function renderDashboard() {
         percentage * circumference;
 
 
-    $("progressBar")
-        .style
-        .strokeDashoffset =
-        offset;
+    const progress =
+        $("progressBar");
+
+    if (progress) {
+
+        progress.style.strokeDashoffset =
+            offset;
+    }
 
 
-    $("consumedAmount").textContent =
+    const consumedElement =
+        $("consumedAmount");
 
-        data.consumed >= 1000
+    if (consumedElement) {
 
-            ? (data.consumed / 1000)
-                .toFixed(
-                    data.consumed % 1000
-                        ? 1
-                        : 0
-                )
+        if (consumed >= 1000) {
 
-            : data.consumed;
+            consumedElement.textContent =
+                (consumed / 1000)
+                    .toFixed(
+                        consumed % 1000
+                            ? 1
+                            : 0
+                    );
+
+        } else {
+
+            consumedElement.textContent =
+                Math.round(consumed);
+        }
+    }
 
 
-    $("goalAmount").textContent =
+    const goalElement =
+        $("goalAmount");
 
-        `/ ${formatAmount(data.goal)}`;
+    if (goalElement) {
+
+        goalElement.textContent =
+            `/ ${formatAmount(goal)}`;
+    }
 
 
     const remaining =
         Math.max(
-            data.goal -
-            data.consumed,
+            goal - consumed,
             0
         );
 
 
-    $("remainingAmount").textContent =
-        formatAmount(remaining);
+    const remainingElement =
+        $("remainingAmount");
+
+    if (remainingElement) {
+
+        remainingElement.textContent =
+            formatAmount(remaining);
+    }
 
 
-    $("completionPercent").textContent =
+    const percentageElement =
+        $("completionPercent");
 
-        Math.round(
-            data.consumed /
-            data.goal *
-            100
-        ) + "%";
+    if (percentageElement) {
+
+        percentageElement.textContent =
+            Math.round(
+                consumed / goal * 100
+            ) + "%";
+    }
 
 
     renderQuickButtons();
-
     renderActivity();
-
     renderWorkout();
-
     renderStreak();
-
     renderNextReminder();
-
 }
 
 
 
-/* =====================================================
-   QUICK BUTTONS
-===================================================== */
+/* =========================================================
+   QUICK ADD
+========================================================= */
 
 function renderQuickButtons() {
 
     const container =
         $("quickGrid");
 
-
-    const presets =
-        data.presets.slice(0,4);
+    if (!container) return;
 
 
     container.innerHTML = "";
 
 
-    presets.forEach(
-        (preset,index) => {
+    data.presets
+        .slice(0, 4)
+        .forEach(
+            function(preset, index) {
 
-            const button =
-                document.createElement(
-                    "button"
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.type =
+                    "button";
+
+                button.className =
+                    "quick-button" +
+                    (
+                        index === 0
+                            ? " primary"
+                            : ""
+                    );
+
+
+                button.innerHTML = `
+                    <strong>
+                        ${
+                            preset.amount >= 1000
+                                ? (preset.amount / 1000) + " L"
+                                : preset.amount
+                        }
+                    </strong>
+
+                    <small>
+                        ${preset.name}
+                    </small>
+                `;
+
+
+                button.addEventListener(
+                    "click",
+                    function() {
+
+                        addWater(
+                            preset.amount
+                        );
+
+                    }
                 );
 
 
-            button.className =
-                "quick-button" +
-                (index === 0
-                    ? " primary"
-                    : "");
+                container.appendChild(
+                    button
+                );
 
-
-            button.innerHTML = `
-
-                <strong>
-                    ${preset.amount >= 1000
-                        ? preset.amount / 1000 + " L"
-                        : preset.amount}
-                </strong>
-
-                <small>
-                    ${preset.name}
-                </small>
-
-            `;
-
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    addWater(
-                        preset.amount
-                    );
-
-                }
-            );
-
-
-            container.appendChild(
-                button
-            );
-
-        }
-    );
-
+            }
+        );
 }
 
 
 
-/* =====================================================
+/* =========================================================
    ADD WATER
-===================================================== */
+========================================================= */
 
 function addWater(amount) {
 
-    if (!amount || amount < 1) {
+    amount =
+        Number(amount);
+
+
+    if (
+        !amount ||
+        amount <= 0
+    ) {
+
+        showToast(
+            "Enter a valid amount."
+        );
 
         return;
-
     }
 
 
@@ -526,7 +579,7 @@ function addWater(amount) {
 
     data.drinks.unshift({
 
-        amount,
+        amount: amount,
 
         time:
             new Date().toISOString()
@@ -542,7 +595,10 @@ function addWater(amount) {
 
     renderDashboard();
 
-    closeSheet("waterSheet");
+    closeSheet(
+        "waterSheet"
+    );
+
 
     showToast(
         `+ ${formatAmount(amount)}`
@@ -553,42 +609,44 @@ function addWater(amount) {
         navigator.vibrate
     ) {
 
-        navigator.vibrate(20);
+        navigator.vibrate(25);
 
     }
-
 }
 
 
 
-/* =====================================================
-   PRESETS
-===================================================== */
+/* =========================================================
+   WATER PRESETS
+========================================================= */
 
 function renderPresets() {
 
     const container =
         $("presetGrid");
 
+    if (!container) return;
+
 
     container.innerHTML = "";
 
 
     data.presets.forEach(
-        preset => {
+        function(preset) {
 
             const button =
                 document.createElement(
                     "button"
                 );
 
+            button.type =
+                "button";
 
             button.className =
                 "preset";
 
 
             button.innerHTML = `
-
                 <strong>
                     ${preset.name}
                 </strong>
@@ -598,13 +656,12 @@ function renderPresets() {
                         preset.amount
                     )}
                 </small>
-
             `;
 
 
             button.addEventListener(
                 "click",
-                () => {
+                function() {
 
                     addWater(
                         preset.amount
@@ -620,45 +677,47 @@ function renderPresets() {
 
         }
     );
-
 }
 
 
 
-/* =====================================================
+/* =========================================================
    ACTIVITY
-===================================================== */
+========================================================= */
 
 function renderActivity() {
 
     const container =
         $("activityList");
 
+    if (!container) return;
 
-    $("entryCount").textContent =
 
-        `${data.drinks.length} ${
-            data.drinks.length === 1
-                ? "entry"
-                : "entries"
-        }`;
+    const count =
+        $("entryCount");
+
+
+    if (count) {
+
+        count.textContent =
+            `${data.drinks.length} ${
+                data.drinks.length === 1
+                    ? "entry"
+                    : "entries"
+            }`;
+    }
 
 
     if (!data.drinks.length) {
 
         container.innerHTML = `
-
             <div class="empty-state">
-
                 Nothing logged yet.
                 Start with your first drink.
-
             </div>
-
         `;
 
         return;
-
     }
 
 
@@ -666,64 +725,64 @@ function renderActivity() {
 
 
     data.drinks
-        .slice(0,10)
-        .forEach(drink => {
+        .slice(0, 10)
+        .forEach(
+            function(drink) {
 
-            const item =
-                document.createElement(
-                    "div"
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+                item.className =
+                    "activity";
+
+
+                const time =
+                    new Date(
+                        drink.time
+                    ).toLocaleTimeString(
+                        "en-IN",
+                        {
+                            hour: "2-digit",
+                            minute: "2-digit"
+                        }
+                    );
+
+
+                item.innerHTML = `
+                    <strong>
+                        ${formatAmount(
+                            drink.amount
+                        )}
+                    </strong>
+
+                    <span>
+                        ${time}
+                    </span>
+                `;
+
+
+                container.appendChild(
+                    item
                 );
 
-
-            item.className =
-                "activity";
-
-
-            const time =
-                new Date(
-                    drink.time
-                ).toLocaleTimeString(
-                    "en-IN",
-                    {
-                        hour: "2-digit",
-                        minute: "2-digit"
-                    }
-                );
-
-
-            item.innerHTML = `
-
-                <strong>
-                    ${formatAmount(
-                        drink.amount
-                    )}
-                </strong>
-
-                <span>
-                    ${time}
-                </span>
-
-            `;
-
-
-            container.appendChild(
-                item
-            );
-
-        });
-
+            }
+        );
 }
 
 
 
-/* =====================================================
-   WORKOUT MODE
-===================================================== */
+/* =========================================================
+   WORKOUT
+========================================================= */
 
 function renderWorkout() {
 
     const toggle =
         $("workoutToggle");
+
+    if (!toggle) return;
 
 
     toggle.classList.toggle(
@@ -732,35 +791,48 @@ function renderWorkout() {
     );
 
 
+    const title =
+        $("workoutTitle");
+
+    const description =
+        $("workoutDescription");
+
+
     if (data.workout) {
 
-        $("workoutTitle")
-            .textContent =
-            "Workout mode is active.";
+        if (title) {
 
-        $("workoutDescription")
-            .textContent =
-            "Reminders are increased during training.";
+            title.textContent =
+                "Workout mode is active.";
+        }
+
+        if (description) {
+
+            description.textContent =
+                "Hydration reminders are increased.";
+        }
 
     } else {
 
-        $("workoutTitle")
-            .textContent =
-            "Ready when you are.";
+        if (title) {
 
-        $("workoutDescription")
-            .textContent =
-            "Increase reminder frequency during training.";
+            title.textContent =
+                "Ready when you are.";
+        }
 
+        if (description) {
+
+            description.textContent =
+                "Increase reminder frequency during training.";
+        }
     }
-
 }
 
 
 
-/* =====================================================
+/* =========================================================
    STREAK
-===================================================== */
+========================================================= */
 
 function renderStreak() {
 
@@ -773,20 +845,21 @@ function renderStreak() {
     while (true) {
 
         const key =
-            date
-                .toISOString()
-                .slice(0,10);
+            date.toISOString()
+                .slice(0, 10);
 
 
         const amount =
             key === todayKey()
-
                 ? data.consumed
+                : Number(
+                    data.history[key] || 0
+                );
 
-                : data.history[key] || 0;
 
-
-        if (amount >= data.goal) {
+        if (
+            amount >= data.goal
+        ) {
 
             streak++;
 
@@ -799,69 +872,85 @@ function renderStreak() {
             break;
 
         }
-
     }
 
 
-    $("streak").textContent =
+    const streakElement =
+        $("streak");
 
-        `${streak} ${
-            streak === 1
-                ? "day"
-                : "days"
-        }`;
+
+    if (streakElement) {
+
+        streakElement.textContent =
+            `${streak} ${
+                streak === 1
+                    ? "day"
+                    : "days"
+            }`;
+    }
 
 
     const allDays = [
-
         ...Object.entries(
             data.history
         ),
-
         [
             todayKey(),
             data.consumed
         ]
-
     ];
 
 
     allDays.sort(
-        (a,b) =>
-            b[1] - a[1]
+        function(a, b) {
+
+            return Number(b[1]) -
+                Number(a[1]);
+
+        }
     );
 
 
-    $("bestDay").textContent =
+    const best =
+        $("bestDay");
 
-        allDays[0]?.[1]
 
-            ? formatAmount(
-                allDays[0][1]
-            )
+    if (best) {
 
-            : "—";
+        best.textContent =
+            allDays[0] &&
+            Number(allDays[0][1]) > 0
 
+                ? formatAmount(
+                    allDays[0][1]
+                )
+
+                : "—";
+    }
 }
 
 
 
-/* =====================================================
+/* =========================================================
    REMINDERS
-===================================================== */
+========================================================= */
 
 function renderNextReminder() {
+
+    const element =
+        $("nextReminder");
+
+    if (!element) return;
+
 
     if (
         !data.reminders.enabled
     ) {
 
-        $("nextReminder")
-            .textContent =
+        element.textContent =
             "Reminders are off";
 
         return;
-
     }
 
 
@@ -873,70 +962,89 @@ function renderNextReminder() {
         const now =
             new Date();
 
+
         const currentMinutes =
             now.getHours() * 60 +
             now.getMinutes();
 
 
         const times =
-            data.reminders.times
-
-                .split(",")
-
-                .map(
-                    time =>
-                        time.trim()
-                )
-
-                .filter(Boolean)
-
-                .sort();
-
-
-        const next =
-            times.find(
-                time => {
-
-                    const [
-                        hour,
-                        minute
-                    ] =
-                        time
-                            .split(":")
-                            .map(Number);
-
-                    return (
-                        hour * 60 +
-                        minute
-                    ) > currentMinutes;
-
+            String(
+                data.reminders.times || ""
+            )
+            .split(",")
+            .map(
+                function(time) {
+                    return time.trim();
                 }
-            );
+            )
+            .filter(Boolean)
+            .sort();
 
 
-        $("nextReminder")
-            .textContent =
-            next ||
+        let nextTime = null;
+
+
+        for (
+            let i = 0;
+            i < times.length;
+            i++
+        ) {
+
+            const parts =
+                times[i]
+                    .split(":")
+                    .map(Number);
+
+
+            if (
+                parts.length !== 2 ||
+                Number.isNaN(parts[0]) ||
+                Number.isNaN(parts[1])
+            ) {
+                continue;
+            }
+
+
+            const minutes =
+                parts[0] * 60 +
+                parts[1];
+
+
+            if (
+                minutes >
+                currentMinutes
+            ) {
+
+                nextTime =
+                    times[i];
+
+                break;
+            }
+        }
+
+
+        element.textContent =
+            nextTime ||
             times[0] ||
             "No times set";
 
 
         return;
-
     }
 
 
     const next =
         new Date(
             Date.now() +
-            data.reminders.interval *
+            Number(
+                data.reminders.interval
+            ) *
             60000
         );
 
 
-    $("nextReminder")
-        .textContent =
-
+    element.textContent =
         next.toLocaleTimeString(
             "en-IN",
             {
@@ -944,14 +1052,13 @@ function renderNextReminder() {
                 minute: "2-digit"
             }
         );
-
 }
 
 
 
-/* =====================================================
-   NOTIFICATION
-===================================================== */
+/* =========================================================
+   NOTIFICATIONS
+========================================================= */
 
 async function requestNotifications() {
 
@@ -960,33 +1067,46 @@ async function requestNotifications() {
     ) {
 
         showToast(
-            "Notifications aren't supported."
+            "Notifications are not supported."
         );
 
         return false;
-
     }
 
 
-    if (
-        Notification.permission ===
-        "default"
-    ) {
+    try {
 
-        await Notification.requestPermission();
+        if (
+            Notification.permission ===
+            "default"
+        ) {
 
+            const permission =
+                await Notification
+                    .requestPermission();
+
+            return permission ===
+                "granted";
+        }
+
+
+        return (
+            Notification.permission ===
+            "granted"
+        );
+
+    } catch (error) {
+
+        console.error(
+            error
+        );
+
+        return false;
     }
-
-
-    return (
-        Notification.permission ===
-        "granted"
-    );
-
 }
 
 
-async function testNotification() {
+async function showNotification() {
 
     const allowed =
         await requestNotifications();
@@ -995,42 +1115,101 @@ async function testNotification() {
     if (!allowed) {
 
         showToast(
-            "Notification permission denied."
+            "Notification permission is required."
         );
 
-        return;
-
+        return false;
     }
 
 
-    new Notification(
-        "HYDR8",
-        {
+    const message =
+        data.workout
 
-            body:
-                data.workout
+            ? "Training hydration check — take a drink."
 
-                    ? "Training hydration check — take a drink."
+            : "Hydration check — time for some water.";
 
-                    : "Hydration check — time for some water."
+
+    try {
+
+        if (
+            "serviceWorker" in navigator
+        ) {
+
+            const registration =
+                await navigator
+                    .serviceWorker
+                    .ready;
+
+
+            await registration.showNotification(
+                "HYDR8",
+                {
+                    body: message,
+                    icon: "",
+                    badge: "",
+                    tag: "hydr8-reminder",
+                    renotify: true,
+                    vibrate: [
+                        200,
+                        100,
+                        200
+                    ]
+                }
+            );
+
+        } else {
+
+            new Notification(
+                "HYDR8",
+                {
+                    body: message
+                }
+            );
 
         }
-    );
 
+        return true;
 
-    playBeep();
+    } catch (error) {
 
-    showToast(
-        "Test reminder sent."
-    );
+        console.error(
+            "Notification error:",
+            error
+        );
 
+        return false;
+    }
 }
 
 
 
-/* =====================================================
+/* =========================================================
+   TEST REMINDER
+========================================================= */
+
+async function testReminder() {
+
+    const result =
+        await showNotification();
+
+
+    if (result) {
+
+        playBeep();
+
+        showToast(
+            "Test reminder sent."
+        );
+
+    }
+}
+
+
+
+/* =========================================================
    SOUND
-===================================================== */
+========================================================= */
 
 function playBeep() {
 
@@ -1042,9 +1221,7 @@ function playBeep() {
 
 
         if (!AudioContext) {
-
             return;
-
         }
 
 
@@ -1060,12 +1237,12 @@ function playBeep() {
             context.createGain();
 
 
-        oscillator.frequency.value =
-            880;
-
-
         oscillator.type =
             "sine";
+
+
+        oscillator.frequency.value =
+            880;
 
 
         gain.gain.setValueAtTime(
@@ -1099,19 +1276,19 @@ function playBeep() {
             context.currentTime + 0.45
         );
 
-    } catch {
+    } catch (error) {
 
-        // Audio unavailable.
-
+        console.log(
+            "Audio unavailable."
+        );
     }
-
 }
 
 
 
-/* =====================================================
-   REMINDER SCHEDULER
-===================================================== */
+/* =========================================================
+   REMINDER TIMER
+========================================================= */
 
 function scheduleReminder() {
 
@@ -1123,14 +1300,14 @@ function scheduleReminder() {
     if (
         !data.reminders.enabled
     ) {
-
         return;
-
     }
 
 
     let minutes =
-        data.reminders.interval;
+        Number(
+            data.reminders.interval
+        ) || 60;
 
 
     if (data.workout) {
@@ -1140,66 +1317,32 @@ function scheduleReminder() {
                 minutes,
                 30
             );
-
     }
 
 
     reminderTimer =
         setTimeout(
-            async () => {
+            async function() {
 
-                await testBackgroundReminder();
+                await showNotification();
 
                 scheduleReminder();
 
             },
-
             minutes * 60000
-
         );
-
-}
-
-
-async function testBackgroundReminder() {
-
-    const allowed =
-        await requestNotifications();
-
-
-    if (allowed) {
-
-        new Notification(
-            "HYDR8",
-            {
-
-                body:
-                    data.workout
-
-                        ? "Training hydration check — take a drink."
-
-                        : "Hydration check — drink some water."
-
-            }
-        );
-
-    }
-
-
-    playBeep();
-
 }
 
 
 
-/* =====================================================
+/* =========================================================
    GOAL
-===================================================== */
+========================================================= */
 
 function suggestGoal() {
 
     const weight =
-        parseFloat(
+        Number(
             $("weightInput").value
         );
 
@@ -1211,7 +1354,6 @@ function suggestGoal() {
         );
 
         return;
-
     }
 
 
@@ -1234,7 +1376,6 @@ function suggestGoal() {
     ) {
 
         goal += 300;
-
     }
 
 
@@ -1243,7 +1384,6 @@ function suggestGoal() {
     ) {
 
         goal += 500;
-
     }
 
 
@@ -1264,13 +1404,10 @@ function suggestGoal() {
         goal;
 
 
-    $("goalResult")
-        .textContent =
-
+    $("goalResult").textContent =
         `Suggested target: ${
             formatAmount(goal)
         }`;
-
 }
 
 
@@ -1282,14 +1419,16 @@ function saveGoal() {
         );
 
 
-    if (!goal || goal < 500) {
+    if (
+        !goal ||
+        goal < 500
+    ) {
 
         showToast(
             "Enter a valid goal."
         );
 
         return;
-
     }
 
 
@@ -1305,86 +1444,108 @@ function saveGoal() {
         "goalSheet"
     );
 
+
     showToast(
         "Daily goal updated."
     );
-
 }
 
 
 
-/* =====================================================
+/* =========================================================
    REMINDER SETTINGS
-===================================================== */
+========================================================= */
 
 function loadReminderForm() {
 
-    $("reminderEnabled")
-        .checked =
-        data.reminders.enabled;
+    const enabled =
+        $("reminderEnabled");
+
+    const mode =
+        $("reminderMode");
+
+    const interval =
+        $("reminderInterval");
+
+    const start =
+        $("reminderStart");
+
+    const end =
+        $("reminderEnd");
+
+    const times =
+        $("specificTimes");
 
 
-    $("reminderMode")
-        .value =
-        data.reminders.mode;
+    if (enabled) {
+        enabled.checked =
+            data.reminders.enabled;
+    }
 
+    if (mode) {
+        mode.value =
+            data.reminders.mode;
+    }
 
-    $("reminderInterval")
-        .value =
-        data.reminders.interval;
+    if (interval) {
+        interval.value =
+            data.reminders.interval;
+    }
 
+    if (start) {
+        start.value =
+            data.reminders.start;
+    }
 
-    $("reminderStart")
-        .value =
-        data.reminders.start;
+    if (end) {
+        end.value =
+            data.reminders.end;
+    }
 
-
-    $("reminderEnd")
-        .value =
-        data.reminders.end;
-
-
-    $("specificTimes")
-        .value =
-        data.reminders.times;
-
+    if (times) {
+        times.value =
+            data.reminders.times;
+    }
 }
 
 
-function saveReminders() {
+async function saveReminders() {
 
     data.reminders = {
 
         enabled:
-            $("reminderEnabled")
-                .checked,
+            $("reminderEnabled").checked,
 
         mode:
-            $("reminderMode")
-                .value,
+            $("reminderMode").value,
 
         interval:
             Number(
-                $("reminderInterval")
-                    .value
+                $("reminderInterval").value
             ),
 
         start:
-            $("reminderStart")
-                .value,
+            $("reminderStart").value,
 
         end:
-            $("reminderEnd")
-                .value,
+            $("reminderEnd").value,
 
         times:
-            $("specificTimes")
-                .value
+            $("specificTimes").value
 
     };
 
 
     saveData();
+
+
+    if (
+        data.reminders.enabled
+    ) {
+
+        await requestNotifications();
+    }
+
 
     scheduleReminder();
 
@@ -1394,17 +1555,17 @@ function saveReminders() {
         "reminderSheet"
     );
 
+
     showToast(
         "Reminder settings saved."
     );
-
 }
 
 
 
-/* =====================================================
+/* =========================================================
    INSIGHTS
-===================================================== */
+========================================================= */
 
 function renderInsights() {
 
@@ -1429,76 +1590,92 @@ function renderInsights() {
         const key =
             date
                 .toISOString()
-                .slice(0,10);
+                .slice(0, 10);
 
 
         const amount =
             key === todayKey()
-
                 ? data.consumed
-
-                : data.history[key] || 0;
+                : Number(
+                    data.history[key] || 0
+                );
 
 
         days.push([
             key,
             amount
         ]);
-
     }
 
 
     const average =
         days.reduce(
-            (sum,item) =>
-                sum + item[1],
+            function(sum, item) {
+
+                return sum +
+                    Number(item[1]);
+
+            },
             0
         ) / 7;
 
 
-    $("average7")
-        .textContent =
+    $("average7").textContent =
         formatAmount(
             Math.round(average)
         );
 
 
-    $("goalDays")
-        .textContent =
+    $("goalDays").textContent =
         days.filter(
-            item =>
-                item[1] >= data.goal
+            function(item) {
+
+                return (
+                    Number(item[1]) >=
+                    Number(data.goal)
+                );
+
+            }
         ).length;
 
 
     const best =
         [...days].sort(
-            (a,b) =>
-                b[1] - a[1]
+            function(a, b) {
+
+                return Number(b[1]) -
+                    Number(a[1]);
+
+            }
         )[0];
 
 
-    $("bestMetric")
-        .textContent =
-        best[1]
+    $("bestMetric").textContent =
+        best && Number(best[1]) > 0
             ? formatAmount(best[1])
             : "—";
 
 
-    $("totalEntries")
-        .textContent =
-        Object.keys(
-            data.history
-        ).length +
+    $("totalEntries").textContent =
         data.drinks.length;
 
 
-    $("historyList")
-        .innerHTML = "";
+    const history =
+        $("historyList");
+
+
+    history.innerHTML = "";
 
 
     days.forEach(
-        ([key,amount]) => {
+        function(item) {
+
+            const key =
+                item[0];
+
+            const amount =
+                item[1];
+
 
             const row =
                 document.createElement(
@@ -1517,7 +1694,6 @@ function renderInsights() {
 
 
             row.innerHTML = `
-
                 <span>
                     ${date.toLocaleDateString(
                         "en-IN",
@@ -1532,37 +1708,44 @@ function renderInsights() {
                 <strong>
                     ${formatAmount(amount)}
                 </strong>
-
             `;
 
 
-            $("historyList")
-                .appendChild(row);
+            history.appendChild(
+                row
+            );
 
         }
     );
-
 }
 
 
 
-/* =====================================================
+/* =========================================================
    SETTINGS
-===================================================== */
+========================================================= */
 
 function loadSettingsForm() {
 
     $("nameInput").value =
-        data.name;
+        data.name || "";
 
 
     $("unitSelect").value =
-        data.unit;
+        data.unit || "ml";
 
 
     $("themeSelect").value =
-        data.theme;
+        data.theme || "dark";
+}
 
+
+function applyTheme() {
+
+    document.body.classList.toggle(
+        "light",
+        data.theme === "light"
+    );
 }
 
 
@@ -1586,6 +1769,8 @@ function saveSettings() {
 
     saveData();
 
+    applyTheme();
+
     renderDate();
 
     renderGreeting();
@@ -1596,17 +1781,17 @@ function saveSettings() {
         "settingsSheet"
     );
 
+
     showToast(
         "Settings saved."
     );
-
 }
 
 
 
-/* =====================================================
+/* =========================================================
    CREATE PRESET
-===================================================== */
+========================================================= */
 
 function savePreset() {
 
@@ -1623,14 +1808,16 @@ function savePreset() {
         );
 
 
-    if (!amount) {
+    if (
+        !amount ||
+        amount <= 0
+    ) {
 
         showToast(
             "Enter a valid amount."
         );
 
         return;
-
     }
 
 
@@ -1651,87 +1838,123 @@ function savePreset() {
 
     renderPresets();
 
+
+    $("presetName").value = "";
+
+    $("presetAmount").value = "";
+
+
     closeSheet(
         "presetSheet"
     );
 
+
     showToast(
         "Bottle preset created."
     );
-
 }
 
 
 
-/* =====================================================
+/* =========================================================
    EXPORT
-===================================================== */
+========================================================= */
 
 function exportData() {
 
-    const blob =
-        new Blob(
-            [
-                JSON.stringify(
-                    data,
-                    null,
-                    2
-                )
-            ],
-            {
-                type:
-                    "application/json"
-            }
+    try {
+
+        const blob =
+            new Blob(
+                [
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    )
+                ],
+                {
+                    type:
+                        "application/json"
+                }
+            );
+
+
+        const url =
+            URL.createObjectURL(
+                blob
+            );
+
+
+        const link =
+            document.createElement(
+                "a"
+            );
+
+
+        link.href =
+            url;
+
+
+        link.download =
+            `hydr8-${todayKey()}.json`;
+
+
+        document.body.appendChild(
+            link
         );
 
 
-    const url =
-        URL.createObjectURL(
-            blob
+        link.click();
+
+
+        link.remove();
+
+
+        setTimeout(
+            function() {
+
+                URL.revokeObjectURL(
+                    url
+                );
+
+            },
+            500
         );
 
 
-    const link =
-        document.createElement(
-            "a"
+        showToast(
+            "Data exported."
         );
 
+    } catch (error) {
 
-    link.href =
-        url;
+        console.error(
+            error
+        );
 
-
-    link.download =
-        `hydr8-${todayKey()}.json`;
-
-
-    link.click();
-
-
-    URL.revokeObjectURL(
-        url
-    );
-
+        showToast(
+            "Export failed."
+        );
+    }
 }
 
 
 
-/* =====================================================
+/* =========================================================
    RESET
-===================================================== */
+========================================================= */
 
 function resetData() {
 
     const confirmed =
-        confirm(
+        window.confirm(
             "Reset all HYDR8 data stored on this phone?"
         );
 
 
     if (!confirmed) {
-
         return;
-
     }
 
 
@@ -1739,20 +1962,23 @@ function resetData() {
         STORAGE_KEY
     );
 
+    localStorage.removeItem(
+        DATE_KEY
+    );
+
 
     location.reload();
-
 }
 
 
 
-/* =====================================================
-   INSTALL PWA
-===================================================== */
+/* =========================================================
+   PWA INSTALL
+========================================================= */
 
 window.addEventListener(
     "beforeinstallprompt",
-    event => {
+    function(event) {
 
         event.preventDefault();
 
@@ -1760,62 +1986,60 @@ window.addEventListener(
             event;
 
 
-        $("installCard")
-            .classList
-            .remove("hidden");
+        const card =
+            $("installCard");
 
+
+        if (card) {
+
+            card.classList.remove(
+                "hidden"
+            );
+        }
     }
 );
 
 
-$("installButton")
-    .addEventListener(
-        "click",
-        async () => {
+async function installApp() {
 
-            if (!deferredInstallPrompt) {
+    if (!deferredInstallPrompt) {
 
-                return;
+        showToast(
+            "Use your browser menu to install HYDR8."
+        );
 
-            }
-
-
-            deferredInstallPrompt
-                .prompt();
+        return;
+    }
 
 
-            await deferredInstallPrompt
-                .userChoice;
+    deferredInstallPrompt.prompt();
 
 
-            deferredInstallPrompt =
-                null;
+    try {
+
+        await deferredInstallPrompt
+            .userChoice;
+
+    } catch (error) {
+
+        console.log(error);
+
+    }
 
 
-            $("installCard")
-                .classList
-                .add("hidden");
-
-        }
-    );
+    deferredInstallPrompt =
+        null;
 
 
-$("dismissInstall")
-    .addEventListener(
-        "click",
-        () => {
-
-            $("installCard")
-                .classList
-                .add("hidden");
-
-        }
-    );
+    $("installCard")
+        .classList
+        .add("hidden");
+}
 
 
 window.addEventListener(
     "appinstalled",
-    () => {
+    function() {
 
         $("installCard")
             .classList
@@ -1826,293 +2050,440 @@ window.addEventListener(
 
 
 
-/* =====================================================
-   SERVICE WORKER
-===================================================== */
+/* =========================================================
+   EVENT LISTENERS
+========================================================= */
 
-if (
-    "serviceWorker" in navigator
-) {
+function setupEvents() {
+
+    /* Install */
+
+    const installButton =
+        $("installButton");
+
+    if (installButton) {
+
+        installButton.onclick =
+            installApp;
+    }
+
+
+    const dismissInstall =
+        $("dismissInstall");
+
+    if (dismissInstall) {
+
+        dismissInstall.onclick =
+            function() {
+
+                $("installCard")
+                    .classList
+                    .add("hidden");
+
+            };
+    }
+
+
+    /* Settings */
+
+    const settingsButton =
+        $("settingsButton");
+
+    if (settingsButton) {
+
+        settingsButton.onclick =
+            function() {
+
+                loadSettingsForm();
+
+                openSheet(
+                    "settingsSheet"
+                );
+
+            };
+    }
+
+
+    const navSettings =
+        $("navSettings");
+
+    if (navSettings) {
+
+        navSettings.onclick =
+            function() {
+
+                loadSettingsForm();
+
+                openSheet(
+                    "settingsSheet"
+                );
+
+            };
+    }
+
+
+    /* Insights */
+
+    const navInsights =
+        $("navInsights");
+
+    if (navInsights) {
+
+        navInsights.onclick =
+            function() {
+
+                renderInsights();
+
+                openSheet(
+                    "insightSheet"
+                );
+
+            };
+    }
+
+
+    /* Goals */
+
+    const navGoals =
+        $("navGoals");
+
+    if (navGoals) {
+
+        navGoals.onclick =
+            function() {
+
+                $("goalInput").value =
+                    data.goal;
+
+                openSheet(
+                    "goalSheet"
+                );
+
+            };
+    }
+
+
+    /* Add water */
+
+    const openAddWater =
+        $("openAddWater");
+
+    if (openAddWater) {
+
+        openAddWater.onclick =
+            function() {
+
+                renderPresets();
+
+                openSheet(
+                    "waterSheet"
+                );
+
+            };
+    }
+
+
+    /* Custom water */
+
+    const addCustomWater =
+        $("addCustomWater");
+
+    if (addCustomWater) {
+
+        addCustomWater.onclick =
+            function() {
+
+                const amount =
+                    Number(
+                        $("customWater")
+                            .value
+                    );
+
+
+                if (!amount) {
+
+                    showToast(
+                        "Enter an amount."
+                    );
+
+                    return;
+                }
+
+
+                addWater(amount);
+
+                $("customWater")
+                    .value = "";
+
+            };
+    }
+
+
+    /* Create preset */
+
+    const createPreset =
+        $("createPreset");
+
+    if (createPreset) {
+
+        createPreset.onclick =
+            function() {
+
+                closeSheet(
+                    "waterSheet"
+                );
+
+                openSheet(
+                    "presetSheet"
+                );
+
+            };
+    }
+
+
+    /* Save preset */
+
+    const savePresetButton =
+        $("savePreset");
+
+    if (savePresetButton) {
+
+        savePresetButton.onclick =
+            savePreset;
+    }
+
+
+    /* Workout */
+
+    const workoutToggle =
+        $("workoutToggle");
+
+    if (workoutToggle) {
+
+        workoutToggle.onclick =
+            function() {
+
+                data.workout =
+                    !data.workout;
+
+                saveData();
+
+                renderWorkout();
+
+                scheduleReminder();
+
+                showToast(
+                    data.workout
+                        ? "Workout mode on."
+                        : "Workout mode off."
+                );
+
+            };
+    }
+
+
+    /* Reminders */
+
+    const openReminders =
+        $("openReminders");
+
+    if (openReminders) {
+
+        openReminders.onclick =
+            function() {
+
+                loadReminderForm();
+
+                openSheet(
+                    "reminderSheet"
+                );
+
+            };
+    }
+
+
+    const saveRemindersButton =
+        $("saveReminders");
+
+    if (saveRemindersButton) {
+
+        saveRemindersButton.onclick =
+            saveReminders;
+    }
+
+
+    const testReminderButton =
+        $("testReminder");
+
+    if (testReminderButton) {
+
+        testReminderButton.onclick =
+            testReminder;
+    }
+
+
+    /* Goal */
+
+    const suggestGoalButton =
+        $("suggestGoal");
+
+    if (suggestGoalButton) {
+
+        suggestGoalButton.onclick =
+            suggestGoal;
+    }
+
+
+    const saveGoalButton =
+        $("saveGoal");
+
+    if (saveGoalButton) {
+
+        saveGoalButton.onclick =
+            saveGoal;
+    }
+
+
+    /* Settings save */
+
+    const saveSettingsButton =
+        $("saveSettings");
+
+    if (saveSettingsButton) {
+
+        saveSettingsButton.onclick =
+            saveSettings;
+    }
+
+
+    /* Export */
+
+    const exportButton =
+        $("exportData");
+
+    if (exportButton) {
+
+        exportButton.onclick =
+            exportData;
+    }
+
+
+    /* Reset */
+
+    const resetButton =
+        $("resetData");
+
+    if (resetButton) {
+
+        resetButton.onclick =
+            resetData;
+    }
+}
+
+
+
+/* =========================================================
+   SERVICE WORKER
+========================================================= */
+
+function registerServiceWorker() {
+
+    if (
+        !("serviceWorker" in navigator)
+    ) {
+
+        return;
+    }
+
 
     window.addEventListener(
         "load",
-        () => {
+        function() {
 
             navigator.serviceWorker
                 .register(
-                    "service-worker.js"
+                    "./service-worker.js"
+                )
+                .then(
+                    function(registration) {
+
+                        console.log(
+                            "HYDR8 service worker registered.",
+                            registration.scope
+                        );
+
+                    }
                 )
                 .catch(
-                    error =>
+                    function(error) {
+
                         console.error(
-                            "Service worker:",
+                            "Service worker registration failed:",
                             error
-                        )
+                        );
+
+                    }
                 );
 
         }
     );
-
 }
 
 
 
-/* =====================================================
-   EVENT LISTENERS
-===================================================== */
+/* =========================================================
+   START APP
+========================================================= */
 
+function initApp() {
 
-/* Add water */
-
-$("openAddWater")
-    .addEventListener(
-        "click",
-        () => {
-
-            renderPresets();
-
-            openSheet(
-                "waterSheet"
-            );
-
-        }
+    console.log(
+        "HYDR8 starting..."
     );
 
 
-/* Custom water */
+    checkNewDay();
 
-$("addCustomWater")
-    .addEventListener(
-        "click",
-        () => {
+    applyTheme();
 
-            const amount =
-                Number(
-                    $("customWater")
-                        .value
-                );
+    renderDate();
 
+    renderGreeting();
 
-            if (!amount) {
+    renderDashboard();
 
-                showToast(
-                    "Enter an amount."
-                );
+    renderPresets();
 
-                return;
-
-            }
-
-
-            addWater(amount);
-
-            $("customWater")
-                .value = "";
-
-        }
-    );
-
-
-/* Create preset */
-
-$("createPreset")
-    .addEventListener(
-        "click",
-        () => {
-
-            closeSheet(
-                "waterSheet"
-            );
-
-            openSheet(
-                "presetSheet"
-            );
-
-        }
-    );
-
-
-/* Save preset */
-
-$("savePreset")
-    .addEventListener(
-        "click",
-        savePreset
-    );
-
-
-/* Workout */
-
-$("workoutToggle")
-    .addEventListener(
-        "click",
-        () => {
-
-            data.workout =
-                !data.workout;
-
-
-            saveData();
-
-            renderWorkout();
-
-            scheduleReminder();
-
-            showToast(
-                data.workout
-                    ? "Workout mode on."
-                    : "Workout mode off."
-            );
-
-        }
-    );
-
-
-/* Reminders */
-
-$("openReminders")
-    .addEventListener(
-        "click",
-        () => {
-
-            loadReminderForm();
-
-            openSheet(
-                "reminderSheet"
-            );
-
-        }
-    );
-
-
-$("saveReminders")
-    .addEventListener(
-        "click",
-        saveReminders
-    );
-
-
-$("testReminder")
-    .addEventListener(
-        "click",
-        testNotification
-    );
-
-
-/* Goals */
-
-$("navGoals")
-    .addEventListener(
-        "click",
-        () => {
-
-            $("goalInput").value =
-                data.goal;
-
-            openSheet(
-                "goalSheet"
-            );
-
-        }
-    );
-
-
-$("suggestGoal")
-    .addEventListener(
-        "click",
-        suggestGoal
-    );
-
-
-$("saveGoal")
-    .addEventListener(
-        "click",
-        saveGoal
-    );
-
-
-/* Insights */
-
-$("navInsights")
-    .addEventListener(
-        "click",
-        () => {
-
-            renderInsights();
-
-            openSheet(
-                "insightSheet"
-            );
-
-        }
-    );
-
-
-/* Settings */
-
-function openSettings() {
+    loadReminderForm();
 
     loadSettingsForm();
 
-    openSheet(
-        "settingsSheet"
+    setupEvents();
+
+    scheduleReminder();
+
+
+    console.log(
+        "HYDR8 ready."
     );
+}
+
+
+if (
+    document.readyState ===
+    "loading"
+) {
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        initApp
+    );
+
+} else {
+
+    initApp();
 
 }
 
 
-$("settingsButton")
-    .addEventListener(
-        "click",
-        openSettings
-    );
-
-
-$("navSettings")
-    .addEventListener(
-        "click",
-        openSettings
-    );
-
-
-$("saveSettings")
-    .addEventListener(
-        "click",
-        saveSettings
-    );
-
-
-$("exportData")
-    .addEventListener(
-        "click",
-        exportData
-    );
-
-
-$("resetData")
-    .addEventListener(
-        "click",
-        resetData
-    );
-
-
-
-/* =====================================================
-   INITIALIZATION
-===================================================== */
-
-checkNewDay();
-
-renderDate();
-
-renderGreeting();
-
-renderDashboard();
-
-renderPresets();
-
-loadReminderForm();
-
-loadSettingsForm();
-
-scheduleReminder();
+registerServiceWorker();
