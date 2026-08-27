@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0,
+                   maximum-scale=1.0, user-scalable=no">
+
+    <meta name="theme-color" content="#0d1117">
+    <meta name="description"
+          content="A personal hydration tracker built for training and everyday performance.">
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+
+    <title>HYDR8 — Hydration Tracker</title>
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+
+        <div>
+            <span class="eyebrow">DAILY HYDRATION</span>
+            <h1>HYDR8</h1>
+        </div>
+
+        <button class="icon-button" id="settingsBtn" aria-label="Settings">
+            <span>⚙</span>
+        </button>
+
+    </header>
+
+
+    <!-- INSTALL BANNER -->
+    <div class="install-banner hidden" id="installBanner">
+
+        <div>
+            <strong>Install HYDR8</strong>
+            <p>Keep your hydration tracker one tap away.</p>
+        </div>
+
+        <button id="installBtn">Install</button>
+
+        <button class="close-install" id="closeInstall">
+            ×
+        </button>
+
+    </div>
+
+
+    <!-- DATE -->
+    <section class="date-section">
+        <p id="currentDate"></p>
+        <h2 id="greeting">Stay hydrated.</h2>
+    </section>
+
+
+    <!-- MAIN HYDRATION CARD -->
+    <main>
+
+        <section class="hydration-card">
+
+            <div class="progress-wrapper">
+
+                <svg class="progress-ring"
+                     viewBox="0 0 240 240">
+
+                    <circle
+                        class="ring-background"
+                        cx="120"
+                        cy="120"
+                        r="98">
+                    </circle>
+
+                    <circle
+                        class="ring-progress"
+                        id="progressRing"
+                        cx="120"
+                        cy="120"
+                        r="98">
+                    </circle>
+
+                </svg>
+
+                <div class="progress-content">
+
+                    <span class="progress-label">
+                        CONSUMED
+                    </span>
+
+                    <strong id="consumed">
+                        0
+                    </strong>
+
+                    <span class="unit">
+                        ml
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="goal-info">
+
+                <div>
+                    <span>DAILY GOAL</span>
+                    <strong id="dailyGoal">3000 ml</strong>
+                </div>
+
+                <div class="remaining">
+                    <span>REMAINING</span>
+                    <strong id="remaining">3000 ml</strong>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- QUICK ADD -->
+
+        <section class="section-block">
+
+            <div class="section-heading">
+
+                <div>
+                    <span class="eyebrow">LOG WATER</span>
+                    <h3>How much?</h3>
+                </div>
+
+                <button class="text-button" id="customAddBtn">
+                    Custom
+                </button>
+
+            </div>
+
+
+            <div class="quick-grid">
+
+                <button class="water-btn" data-amount="250">
+                    <strong>250</strong>
+                    <span>ml</span>
+                </button>
+
+                <button class="water-btn" data-amount="500">
+                    <strong>500</strong>
+                    <span>ml</span>
+                </button>
+
+                <button class="water-btn" data-amount="750">
+                    <strong>750</strong>
+                    <span>ml</span>
+                </button>
+
+                <button class="water-btn" data-amount="1000">
+                    <strong>1</strong>
+                    <span>L</span>
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- WORKOUT MODE -->
+
+        <section class="workout-card">
+
+            <div class="workout-copy">
+
+                <span class="eyebrow">TRAINING MODE</span>
+
+                <h3>Workout Mode</h3>
+
+                <p>
+                    Increase hydration reminders while you're training.
+                </p>
+
+            </div>
+
+            <button
+                class="toggle"
+                id="workoutToggle"
+                aria-label="Toggle workout mode">
+
+                <span></span>
+
+            </button>
+
+        </section>
+
+
+        <!-- NEXT REMINDER -->
+
+        <section class="reminder-card">
+
+            <div class="reminder-icon">
+                +
+            </div>
+
+            <div class="reminder-content">
+
+                <span>NEXT REMINDER</span>
+
+                <strong id="nextReminder">
+                    Set your reminder
+                </strong>
+
+            </div>
+
+            <button
+                class="small-button"
+                id="reminderBtn">
+
+                Set
+
+            </button>
+
+        </section>
+
+
+        <!-- TODAY'S ACTIVITY -->
+
+        <section class="section-block activity-section">
+
+            <div class="section-heading">
+
+                <div>
+                    <span class="eyebrow">TODAY</span>
+                    <h3>Activity</h3>
+                </div>
+
+                <span class="count-label" id="drinkCount">
+                    0 drinks
+                </span>
+
+            </div>
+
+            <div id="activityList" class="activity-list">
+
+                <div class="empty-state">
+                    No water logged yet.
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- BOTTOM NAV -->
+
+    <nav class="bottom-nav">
+
+        <button class="nav-item active">
+            <span>◉</span>
+            <small>Today</small>
+        </button>
+
+        <button class="nav-item" id="statsBtn">
+            <span>↗</span>
+            <small>Stats</small>
+        </button>
+
+        <button class="nav-item" id="goalBtn">
+            <span>◎</span>
+            <small>Goal</small>
+        </button>
+
+    </nav>
+
+</div>
+
+
+<!-- ADD WATER MODAL -->
+
+<div class="modal hidden" id="waterModal">
+
+    <div class="modal-box">
+
+        <button class="modal-close" data-close="waterModal">
+            ×
+        </button>
+
+        <span class="eyebrow">CUSTOM ENTRY</span>
+
+        <h2>Add water</h2>
+
+        <input
+            type="number"
+            id="customAmount"
+            placeholder="Amount in ml"
+            min="1"
+            inputmode="numeric">
+
+        <button class="primary-button" id="addCustomWater">
+            Add water
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- SETTINGS MODAL -->
+
+<div class="modal hidden" id="settingsModal">
+
+    <div class="modal-box">
+
+        <button class="modal-close" data-close="settingsModal">
+            ×
+        </button>
+
+        <span class="eyebrow">PERSONALISE</span>
+
+        <h2>Your settings</h2>
+
+
+        <label>
+            Name
+            <input
+                type="text"
+                id="nameInput"
+                placeholder="Your name">
+        </label>
+
+
+        <label>
+            Daily water goal
+            <input
+                type="number"
+                id="goalInput"
+                placeholder="3000"
+                inputmode="numeric">
+        </label>
+
+
+        <label>
+            Reminder interval
+            <select id="intervalInput">
+
+                <option value="30">
+                    Every 30 minutes
+                </option>
+
+                <option value="45">
+                    Every 45 minutes
+                </option>
+
+                <option value="60" selected>
+                    Every 60 minutes
+                </option>
+
+                <option value="90">
+                    Every 90 minutes
+                </option>
+
+                <option value="120">
+                    Every 2 hours
+                </option>
+
+            </select>
+        </label>
+
+
+        <button
+            class="primary-button"
+            id="saveSettings">
+
+            Save settings
+
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- GOAL MODAL -->
+
+<div class="modal hidden" id="goalModal">
+
+    <div class="modal-box">
+
+        <button class="modal-close" data-close="goalModal">
+            ×
+        </button>
+
+        <span class="eyebrow">SET YOUR TARGET</span>
+
+        <h2>Hydration goal</h2>
+
+        <p class="modal-description">
+            Enter your body weight to get a starting hydration target.
+        </p>
+
+        <label>
+            Body weight (kg)
+
+            <input
+                type="number"
+                id="weightInput"
+                placeholder="70"
+                inputmode="decimal">
+
+        </label>
+
+        <button
+            class="primary-button"
+            id="calculateGoal">
+
+            Calculate
+
+        </button>
+
+        <p id="goalResult" class="goal-result"></p>
+
+    </div>
+
+</div>
+
+
+<script src="app.js"></script>
+
+</body>
+</html>
