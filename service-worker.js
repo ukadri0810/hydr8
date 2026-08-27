@@ -1,5 +1,5 @@
 const CACHE_NAME =
-    "hydr8-cache-v1";
+    "hydr8-cache-v2";
 
 
 const FILES_TO_CACHE = [
