@@ -3,102 +3,152 @@
 <head>
     <meta charset="UTF-8">
 
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0,
-                   maximum-scale=1.0, user-scalable=no">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, viewport-fit=cover"
+    >
 
-    <meta name="theme-color" content="#0d1117">
-    <meta name="description"
-          content="A personal hydration tracker built for training and everyday performance.">
+    <meta
+        name="theme-color"
+        content="#0b0f14"
+    >
+
+    <meta
+        name="description"
+        content="HYDR8 — Personal hydration tracker"
+    >
 
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
 
-    <title>HYDR8 — Hydration Tracker</title>
+    <title>HYDR8</title>
 </head>
 
 <body>
 
-<div class="app-shell">
+<div id="toast" class="toast"></div>
 
-    <!-- TOP BAR -->
+<div class="app">
+
+    <!-- HEADER -->
     <header class="topbar">
 
         <div>
-            <span class="eyebrow">DAILY HYDRATION</span>
+            <span class="eyebrow">HYDRATION / TODAY</span>
             <h1>HYDR8</h1>
         </div>
 
-        <button class="icon-button" id="settingsBtn" aria-label="Settings">
-            <span>⚙</span>
+        <button
+            class="icon-button"
+            id="settingsButton"
+            aria-label="Settings"
+        >
+            ⚙
         </button>
 
     </header>
 
 
-    <!-- INSTALL BANNER -->
-    <div class="install-banner hidden" id="installBanner">
+    <!-- INSTALL CARD -->
+    <section
+        class="install-card hidden"
+        id="installCard"
+    >
 
-        <div>
-            <strong>Install HYDR8</strong>
-            <p>Keep your hydration tracker one tap away.</p>
+        <div class="install-copy">
+
+            <span class="eyebrow">
+                APP EXPERIENCE
+            </span>
+
+            <h3>
+                Install HYDR8
+            </h3>
+
+            <p>
+                Add HYDR8 to your home screen for a cleaner,
+                faster experience.
+            </p>
+
         </div>
 
-        <button id="installBtn">Install</button>
+        <button
+            class="primary-button small"
+            id="installButton"
+        >
+            Install
+        </button>
 
-        <button class="close-install" id="closeInstall">
+        <button
+            class="dismiss-button"
+            id="dismissInstall"
+        >
             ×
         </button>
 
-    </div>
-
-
-    <!-- DATE -->
-    <section class="date-section">
-        <p id="currentDate"></p>
-        <h2 id="greeting">Stay hydrated.</h2>
     </section>
 
 
-    <!-- MAIN HYDRATION CARD -->
     <main>
 
-        <section class="hydration-card">
+        <!-- ============================= -->
+        <!-- TODAY HERO -->
+        <!-- ============================= -->
 
-            <div class="progress-wrapper">
+        <section class="hero-card">
 
-                <svg class="progress-ring"
-                     viewBox="0 0 240 240">
+            <div class="hero-heading">
+
+                <span
+                    class="muted"
+                    id="todayDate"
+                ></span>
+
+                <h2 id="greeting">
+                    Stay ahead of your hydration.
+                </h2>
+
+            </div>
+
+
+            <!-- PROGRESS -->
+            <div class="progress-container">
+
+                <svg
+                    class="progress-ring"
+                    viewBox="0 0 220 220"
+                >
 
                     <circle
-                        class="ring-background"
-                        cx="120"
-                        cy="120"
-                        r="98">
-                    </circle>
+                        class="progress-background"
+                        cx="110"
+                        cy="110"
+                        r="88"
+                    />
 
                     <circle
-                        class="ring-progress"
-                        id="progressRing"
-                        cx="120"
-                        cy="120"
-                        r="98">
-                    </circle>
+                        class="progress-bar"
+                        id="progressBar"
+                        cx="110"
+                        cy="110"
+                        r="88"
+                    />
 
                 </svg>
 
+
                 <div class="progress-content">
 
-                    <span class="progress-label">
-                        CONSUMED
+                    <span class="eyebrow">
+                        TODAY
                     </span>
 
-                    <strong id="consumed">
+                    <strong id="consumedAmount">
                         0
                     </strong>
 
-                    <span class="unit">
-                        ml
+                    <span id="goalAmount">
+                        / 3.0 L
                     </span>
 
                 </div>
@@ -106,16 +156,33 @@
             </div>
 
 
-            <div class="goal-info">
+            <!-- STATS -->
 
-                <div>
-                    <span>DAILY GOAL</span>
-                    <strong id="dailyGoal">3000 ml</strong>
+            <div class="hero-stats">
+
+                <div class="stat-box">
+
+                    <span>
+                        REMAINING
+                    </span>
+
+                    <strong id="remainingAmount">
+                        3.0 L
+                    </strong>
+
                 </div>
 
-                <div class="remaining">
-                    <span>REMAINING</span>
-                    <strong id="remaining">3000 ml</strong>
+
+                <div class="stat-box">
+
+                    <span>
+                        COMPLETION
+                    </span>
+
+                    <strong id="completionPercent">
+                        0%
+                    </strong>
+
                 </div>
 
             </div>
@@ -123,63 +190,94 @@
         </section>
 
 
+        <!-- ============================= -->
+        <!-- NEXT REMINDER -->
+        <!-- ============================= -->
+
+        <section class="reminder-card">
+
+            <div class="reminder-icon">
+                ◷
+            </div>
+
+            <div class="flex-grow">
+
+                <span class="eyebrow">
+                    NEXT REMINDER
+                </span>
+
+                <strong id="nextReminder">
+                    Reminders are off
+                </strong>
+
+            </div>
+
+            <button
+                class="outline-button"
+                id="openReminders"
+            >
+                Manage
+            </button>
+
+        </section>
+
+
+        <!-- ============================= -->
         <!-- QUICK ADD -->
+        <!-- ============================= -->
 
-        <section class="section-block">
+        <section class="section">
 
-            <div class="section-heading">
+            <div class="section-header">
 
                 <div>
-                    <span class="eyebrow">LOG WATER</span>
-                    <h3>How much?</h3>
+
+                    <span class="eyebrow">
+                        LOG WATER
+                    </span>
+
+                    <h3>
+                        Quick add
+                    </h3>
+
                 </div>
 
-                <button class="text-button" id="customAddBtn">
+                <button
+                    class="text-button"
+                    id="openAddWater"
+                >
                     Custom
                 </button>
 
             </div>
 
 
-            <div class="quick-grid">
-
-                <button class="water-btn" data-amount="250">
-                    <strong>250</strong>
-                    <span>ml</span>
-                </button>
-
-                <button class="water-btn" data-amount="500">
-                    <strong>500</strong>
-                    <span>ml</span>
-                </button>
-
-                <button class="water-btn" data-amount="750">
-                    <strong>750</strong>
-                    <span>ml</span>
-                </button>
-
-                <button class="water-btn" data-amount="1000">
-                    <strong>1</strong>
-                    <span>L</span>
-                </button>
-
-            </div>
+            <div
+                class="quick-grid"
+                id="quickGrid"
+            ></div>
 
         </section>
 
 
+        <!-- ============================= -->
         <!-- WORKOUT MODE -->
+        <!-- ============================= -->
 
         <section class="workout-card">
 
-            <div class="workout-copy">
+            <div class="flex-grow">
 
-                <span class="eyebrow">TRAINING MODE</span>
+                <span class="eyebrow">
+                    TRAINING MODE
+                </span>
 
-                <h3>Workout Mode</h3>
+                <h3 id="workoutTitle">
+                    Ready when you are.
+                </h3>
 
-                <p>
-                    Increase hydration reminders while you're training.
+                <p id="workoutDescription">
+                    Increase reminder frequency during training.
                 </p>
 
             </div>
@@ -187,7 +285,7 @@
             <button
                 class="toggle"
                 id="workoutToggle"
-                aria-label="Toggle workout mode">
+            >
 
                 <span></span>
 
@@ -196,57 +294,72 @@
         </section>
 
 
-        <!-- NEXT REMINDER -->
+        <!-- ============================= -->
+        <!-- TODAY ACTIVITY -->
+        <!-- ============================= -->
 
-        <section class="reminder-card">
+        <section class="section">
 
-            <div class="reminder-icon">
-                +
-            </div>
-
-            <div class="reminder-content">
-
-                <span>NEXT REMINDER</span>
-
-                <strong id="nextReminder">
-                    Set your reminder
-                </strong>
-
-            </div>
-
-            <button
-                class="small-button"
-                id="reminderBtn">
-
-                Set
-
-            </button>
-
-        </section>
-
-
-        <!-- TODAY'S ACTIVITY -->
-
-        <section class="section-block activity-section">
-
-            <div class="section-heading">
+            <div class="section-header">
 
                 <div>
-                    <span class="eyebrow">TODAY</span>
-                    <h3>Activity</h3>
+
+                    <span class="eyebrow">
+                        TODAY
+                    </span>
+
+                    <h3>
+                        Activity
+                    </h3>
+
                 </div>
 
-                <span class="count-label" id="drinkCount">
-                    0 drinks
+                <span
+                    class="muted"
+                    id="entryCount"
+                >
+                    0 entries
                 </span>
 
             </div>
 
-            <div id="activityList" class="activity-list">
 
-                <div class="empty-state">
-                    No water logged yet.
-                </div>
+            <div
+                class="activity-list"
+                id="activityList"
+            ></div>
+
+        </section>
+
+
+        <!-- ============================= -->
+        <!-- STREAK -->
+        <!-- ============================= -->
+
+        <section class="streak-card">
+
+            <div>
+
+                <span class="eyebrow">
+                    HYDRATION STREAK
+                </span>
+
+                <strong id="streak">
+                    0 days
+                </strong>
+
+            </div>
+
+
+            <div class="best-day">
+
+                <span>
+                    BEST DAY
+                </span>
+
+                <strong id="bestDay">
+                    —
+                </strong>
 
             </div>
 
@@ -255,23 +368,47 @@
     </main>
 
 
-    <!-- BOTTOM NAV -->
+    <!-- ============================= -->
+    <!-- BOTTOM NAVIGATION -->
+    <!-- ============================= -->
 
-    <nav class="bottom-nav">
+    <nav class="bottom-navigation">
 
         <button class="nav-item active">
-            <span>◉</span>
+
+            <span>●</span>
             <small>Today</small>
+
         </button>
 
-        <button class="nav-item" id="statsBtn">
+        <button
+            class="nav-item"
+            id="navInsights"
+        >
+
             <span>↗</span>
-            <small>Stats</small>
+            <small>Insights</small>
+
         </button>
 
-        <button class="nav-item" id="goalBtn">
+        <button
+            class="nav-item"
+            id="navGoals"
+        >
+
             <span>◎</span>
-            <small>Goal</small>
+            <small>Goals</small>
+
+        </button>
+
+        <button
+            class="nav-item"
+            id="navSettings"
+        >
+
+            <span>⚙</span>
+            <small>Settings</small>
+
         </button>
 
     </nav>
@@ -279,156 +416,229 @@
 </div>
 
 
-<!-- ADD WATER MODAL -->
 
-<div class="modal hidden" id="waterModal">
+<!-- ===================================================== -->
+<!-- ADD WATER SHEET -->
+<!-- ===================================================== -->
 
-    <div class="modal-box">
+<div
+    class="sheet hidden"
+    id="waterSheet"
+>
 
-        <button class="modal-close" data-close="waterModal">
+    <div
+        class="sheet-backdrop"
+        data-close="waterSheet"
+    ></div>
+
+
+    <section class="sheet-panel">
+
+        <button
+            class="close-button"
+            data-close="waterSheet"
+        >
             ×
         </button>
 
-        <span class="eyebrow">CUSTOM ENTRY</span>
+        <span class="eyebrow">
+            ADD WATER
+        </span>
 
-        <h2>Add water</h2>
-
-        <input
-            type="number"
-            id="customAmount"
-            placeholder="Amount in ml"
-            min="1"
-            inputmode="numeric">
-
-        <button class="primary-button" id="addCustomWater">
-            Add water
-        </button>
-
-    </div>
-
-</div>
+        <h2>
+            How much did you drink?
+        </h2>
 
 
-<!-- SETTINGS MODAL -->
-
-<div class="modal hidden" id="settingsModal">
-
-    <div class="modal-box">
-
-        <button class="modal-close" data-close="settingsModal">
-            ×
-        </button>
-
-        <span class="eyebrow">PERSONALISE</span>
-
-        <h2>Your settings</h2>
+        <div
+            class="preset-grid"
+            id="presetGrid"
+        ></div>
 
 
-        <label>
-            Name
+        <div class="custom-input-row">
+
             <input
-                type="text"
-                id="nameInput"
-                placeholder="Your name">
-        </label>
-
-
-        <label>
-            Daily water goal
-            <input
+                id="customWater"
                 type="number"
-                id="goalInput"
-                placeholder="3000"
-                inputmode="numeric">
-        </label>
+                inputmode="numeric"
+                min="1"
+                placeholder="Custom ml"
+            >
 
+            <button
+                class="primary-button"
+                id="addCustomWater"
+            >
+                Add
+            </button>
 
-        <label>
-            Reminder interval
-            <select id="intervalInput">
-
-                <option value="30">
-                    Every 30 minutes
-                </option>
-
-                <option value="45">
-                    Every 45 minutes
-                </option>
-
-                <option value="60" selected>
-                    Every 60 minutes
-                </option>
-
-                <option value="90">
-                    Every 90 minutes
-                </option>
-
-                <option value="120">
-                    Every 2 hours
-                </option>
-
-            </select>
-        </label>
+        </div>
 
 
         <button
-            class="primary-button"
-            id="saveSettings">
-
-            Save settings
-
+            class="outline-button full-width"
+            id="createPreset"
+        >
+            Create bottle preset
         </button>
 
-    </div>
+    </section>
 
 </div>
 
 
-<!-- GOAL MODAL -->
 
-<div class="modal hidden" id="goalModal">
+<!-- ===================================================== -->
+<!-- REMINDER SHEET -->
+<!-- ===================================================== -->
 
-    <div class="modal-box">
+<div
+    class="sheet hidden"
+    id="reminderSheet"
+>
 
-        <button class="modal-close" data-close="goalModal">
+    <div
+        class="sheet-backdrop"
+        data-close="reminderSheet"
+    ></div>
+
+
+    <section class="sheet-panel">
+
+        <button
+            class="close-button"
+            data-close="reminderSheet"
+        >
             ×
         </button>
 
-        <span class="eyebrow">SET YOUR TARGET</span>
+        <span class="eyebrow">
+            REMINDER ENGINE
+        </span>
 
-        <h2>Hydration goal</h2>
+        <h2>
+            Make it fit your day.
+        </h2>
 
-        <p class="modal-description">
-            Enter your body weight to get a starting hydration target.
-        </p>
 
-        <label>
-            Body weight (kg)
+        <label class="switch-row">
+
+            <div>
+
+                <strong>
+                    Hydration reminders
+                </strong>
+
+                <small>
+                    Keep HYDR8 checking in.
+                </small>
+
+            </div>
 
             <input
-                type="number"
-                id="weightInput"
-                placeholder="70"
-                inputmode="decimal">
+                type="checkbox"
+                id="reminderEnabled"
+            >
+
+            <i></i>
 
         </label>
 
-        <button
-            class="primary-button"
-            id="calculateGoal">
 
-            Calculate
+        <div class="form-grid">
 
-        </button>
+            <label>
 
-        <p id="goalResult" class="goal-result"></p>
+                Mode
 
-    </div>
+                <select id="reminderMode">
 
-</div>
+                    <option value="interval">
+                        Every interval
+                    </option>
+
+                    <option value="specific">
+                        Specific times
+                    </option>
+
+                </select>
+
+            </label>
 
 
-<script src="app.js"></script>
+            <label>
 
-</body>
-</html>
+                Interval
+
+                <select id="reminderInterval">
+
+                    <option value="20">
+                        20 minutes
+                    </option>
+
+                    <option value="30">
+                        30 minutes
+                    </option>
+
+                    <option value="45">
+                        45 minutes
+                    </option>
+
+                    <option value="60">
+                        60 minutes
+                    </option>
+
+                    <option value="90">
+                        90 minutes
+                    </option>
+
+                    <option value="120">
+                        2 hours
+                    </option>
+
+                </select>
+
+            </label>
+
+
+            <label>
+
+                Start
+
+                <input
+                    id="reminderStart"
+                    type="time"
+                >
+
+            </label>
+
+
+            <label>
+
+                End
+
+                <input
+                    id="reminderEnd"
+                    type="time"
+                >
+
+            </label>
+
+        </div>
+
+
+        <label>
+
+            Specific reminder times
+
+            <textarea
+                id="specificTimes"
+                rows="3"
+                placeholder="08:00, 10:00, 12:30, 15:00"
+            ></textarea>
+
+        </label>
+
+
+        <div class="info
