@@ -641,4 +641,114 @@
         </label>
 
 
-        <div class="info
+        <div class="info"></div>
+        
+        <button class="primary-button full-width" id="saveReminders">Save Reminders</button>
+
+    </section>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- INSIGHTS SHEET -->
+<!-- ===================================================== -->
+<div class="sheet hidden" id="insightSheet">
+    <div class="sheet-backdrop" data-close="insightSheet"></div>
+    <section class="sheet-panel">
+        <button class="close-button" data-close="insightSheet">×</button>
+        <span class="eyebrow">YOUR STATS</span>
+        <h2>Insights</h2>
+        
+        <p>Average (7 days): <strong id="average7"></strong></p>
+        <p>Days goal reached: <strong id="goalDays"></strong></p>
+        <p>Best day: <strong id="bestMetric"></strong></p>
+        <p>Total drinks logged: <strong id="totalEntries"></strong></p>
+        
+        <div id="historyList" class="activity-list"></div>
+    </section>
+</div>
+
+<!-- ===================================================== -->
+<!-- GOALS SHEET -->
+<!-- ===================================================== -->
+<div class="sheet hidden" id="goalSheet">
+    <div class="sheet-backdrop" data-close="goalSheet"></div>
+    <section class="sheet-panel">
+        <button class="close-button" data-close="goalSheet">×</button>
+        <span class="eyebrow">TARGETS</span>
+        <h2>Set your daily goal</h2>
+
+        <div class="form-grid">
+            <label>
+                Body Weight (kg)
+                <input id="weightInput" type="number" min="1">
+            </label>
+            <label>
+                Activity Level
+                <select id="activityLevel">
+                    <option value="low">Low</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="high">High</option>
+                </select>
+            </label>
+            <label>
+                Workout (Minutes)
+                <input id="workoutMinutes" type="number" min="0" placeholder="0">
+            </label>
+        </div>
+        
+        <button class="outline-button full-width" id="suggestGoal" style="margin-top: 10px; margin-bottom: 10px;">Suggest Goal</button>
+        <div id="goalResult" style="text-align: center; font-weight: bold; margin-bottom: 20px;"></div>
+        
+        <label>
+            Custom Goal Amount
+            <input id="goalInput" type="number" min="500">
+        </label>
+        <button class="primary-button full-width" id="saveGoal" style="margin-top: 10px;">Save Goal</button>
+    </section>
+</div>
+
+<!-- ===================================================== -->
+<!-- SETTINGS SHEET -->
+<!-- ===================================================== -->
+<div class="sheet hidden" id="settingsSheet">
+    <div class="sheet-backdrop" data-close="settingsSheet"></div>
+    <section class="sheet-panel">
+        <button class="close-button" data-close="settingsSheet">×</button>
+        <span class="eyebrow">PREFERENCES</span>
+        <h2>Settings</h2>
+
+        <label>
+            Your Name
+            <input id="nameInput" type="text" placeholder="Enter name">
+        </label>
+        <label>
+            Measurement Unit
+            <select id="unitSelect">
+                <option value="ml">Milliliters (ml)</option>
+                <option value="oz">Ounces (oz)</option>
+            </select>
+        </label>
+        <label>
+            Theme
+            <select id="themeSelect">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+            </select>
+        </label>
+        
+        <button class="primary-button full-width" id="saveSettings" style="margin-top: 20px;">Save Settings</button>
+        
+        <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px;">
+            <button class="outline-button full-width" id="exportData">Export Data</button>
+            <button class="outline-button full-width" id="resetData" style="color: #ff453a; border-color: rgba(255, 69, 58, 0.3);">Reset All Data</button>
+        </div>
+    </section>
+</div>
+
+<!-- SCRIPTS -->
+<script src="app.js"></script>
+</body>
+</html>
+
